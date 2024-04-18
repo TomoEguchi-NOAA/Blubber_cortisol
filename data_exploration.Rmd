@@ -1,0 +1,64 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Analysis of blubber cortisol data for Keiko Sherman. 
+
+Set up some libraries and bring in data
+```{r}
+
+library(tidyverse)
+library(readr)
+library(ggplot2)
+library(nlme)
+
+data.0 <- read_csv(file = "data/PLTCL2_TE.csv",
+                   col_types = cols(SpecimenID = col_factor(),
+                                    Position = col_character(),
+                                    Species = col_factor(levels = c("T tru", "D cap")),
+                                    SampleType = col_factor(levels = c("Stranding", "Fishery")),
+                                    LocLay = col_factor(levels = c("Location", "Layer")),
+                                    PL = col_double(),
+                                    TCL = col_double(),
+                                    AvgCort = col_double(),
+                                    Sex = col_factor(levels = c("F", "M")))) 
+
+
+summary(data.0)
+```
+
+```{r}
+ggplot(data.0) +
+  geom_point(aes(x = Position, 
+                 y = log(AvgCort), 
+                 color = SampleType,
+                 shape = Species)) +
+  facet_wrap(~ SpecimenID)
+
+
+```
+
+These plots show that AvgCort is low for fishery caught animals than for stranded animals. 
+
+A quick look at how the depths of samples affected readings.
+
+```{r}
+f.1 <- formula(AvgCort ~ Sex * SampleType * Position)
+fit.1 <- lme(f.1, random = ~1 | SpecimenID / Position, 
+             data = data.0 %>% filter(LocLay == "Layer"))
+summary(fit.1)
+```
+
+
+```{r}
+f.2 <- formula(AvgCort ~ SampleType * Position)
+fit.2 <- lme(f.2, random = ~1 | SpecimenID / Position, 
+             data = data.0 %>% filter(LocLay == "Layer"))
+summary(fit.2)
+```
+
+```{r}
+anova(fit.1, fit.2)
+```
+
